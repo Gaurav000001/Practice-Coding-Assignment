@@ -1,6 +1,9 @@
 package com.masai.service;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -15,16 +18,25 @@ public class GithubServiceImpl implements GithubService{
     
     @Autowired
     private GithubDataEntityRepository githubDataEntityRepository;
-    
-    @Override
-    public String getUserDataByUsername(String username) {
+
+    @Async
+    public CompletableFuture<GithubDataEntity[]> fetchData(String username) {
     	String GITHUB_API_URL = "https://api.github.com/users/" + username + "/repos";
     	
     	GithubDataEntity[] githubDataEntityArray = restTemplate.getForObject(GITHUB_API_URL, GithubDataEntity[].class);
     	
-    	for(GithubDataEntity githubDataEntity: githubDataEntityArray) {
-    		if(githubDataEntityRepository.existsById(githubDataEntity.getId()) == false) githubDataEntityRepository.save(githubDataEntity);
-    	}
+    	return CompletableFuture.completedFuture(githubDataEntityArray);
+    }
+    
+    @Override
+    public String getUserDataByUsername(String username) {
+    	CompletableFuture<GithubDataEntity[]> asyncResult = this.fetchData(username);
+    	
+    	asyncResult.thenAccept(result -> {
+    		for(GithubDataEntity githubDataEntity: result) {
+        		if(githubDataEntityRepository.existsById(githubDataEntity.getId()) == false) githubDataEntityRepository.save(githubDataEntity);
+        	}
+    	});
         
         return "Data saved successfully!";
     }
