@@ -33,4 +33,5 @@ public class Owner {
 	@JsonIgnore
 	@OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<GithubDataEntity> githubDataEntities;
+	
 }
